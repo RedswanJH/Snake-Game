@@ -2,305 +2,340 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-public class SnakeGame extends GameEngine{
+public class SnakeGame extends GameEngine {
     public static void main(String[] args) {
         createGame(new SnakeGame());
     }
 
-    //准备图片的变量
+    // 准备图片的变量
     Image imgHead;
     Image imgBody;
     Image imgApple;
     Image imgPoison;
     Image imgHeart;
+    Image imgHead2;
 
 
-    //生命值
-    int healthPoints = 4;
-
-    //游戏菜单选择 true菜单模式 false游戏模式
+    // 游戏菜单控制
     boolean gameMenu = true;
-    //菜单选择 0: “开始” 1: “帮助” 2: “退出”
-
-    //HELP页面的开关
-    boolean showHelp = false; // 帮助页面开关
-
-    //判断游戏结束
+    boolean showHelp = false;
     boolean isGameOver = false;
 
-    //========================画网格=========================
-    public void drawGrid(){
-        changeColor(64,64,64);
-        for(int i = 0 ; i <= 500 ;i = i+20){
+    //双人模式开关
+    boolean isTwoPlayer = false;
+
+    // ======================== 画网格 =========================
+    public void drawGrid() {
+        changeColor(64, 64, 64);
+        for (int i = 0; i <= 500; i = i + 20) {
             drawLine(i, 20, i, 500);
         }
-        for(int j = 0 ; j <= 500 ;j = j+20){
+        for (int j = 0; j <= 500; j = j + 20) {
             drawLine(0, j, 500, j);
         }
-
     }
 
-    //=========================贪吃蛇========================
-    //准备贪吃蛇的身体 ArrayList
-    //ArrayList<Point>存的是（x,y）
+    // ========================= 贪吃蛇 1  ========================
     ArrayList<Point> snakeBody = new ArrayList<>();
+    int snakeLength1 = 3;
+    // 生命值
+    int healthPoints1 = 4;
+    int direction = 3;
 
-    //贪吃蛇初始长度 身体长度为1
-    int snakeLength = 3;
-    int direction = 3; // 0:上 1:下 2:左 3:右
-    //添加时间控制
-    //update(double dt) 是每秒钟跑 60 次, 蛇 1 秒移动 60 格
+    // ========================= 贪吃蛇 2 ========================
+    ArrayList<Point> snakeBody2 = new ArrayList<>();
+    int direction2 = 2; // 默认向左，避免撞车
+    int snakeLength2 = 3;
+    int healthPoints2 = 4;
     double timer = 0.0;
 
-
-    //画蛇
-    public void drawSnake(){
-        for (int i = 0; i < snakeBody.size(); i++) {
-            Point p = snakeBody.get(i);
-            if (i == 0) {
-                drawImage(imgHead, p.x , p.y ,19,19);
-            }else{
-                drawImage(imgBody, p.x , p.y ,19 ,19);
-            }
-        }
-    }
-
-    //更新蛇的位置
-    public void update(double dt){
-        if(isGameOver) return;
+    // 更新逻辑
+    public void update(double dt) {
+        if (isGameOver || gameMenu) return;
         timer += dt;
-        if(timer >= 0.25){
-            //贪吃蛇前移逻辑，从后往前数，头在[0],尾巴在[i-1]
-            for(int i = snakeBody.size()-1; i > 0; i--){
-                snakeBody.get(i).x = snakeBody.get(i-1).x;
-                snakeBody.get(i).y = snakeBody.get(i-1).y;
-            }
-            //更新蛇头的位置
-            Point head = snakeBody.getFirst();
-            // 0:上 1:下 2:左 3:右
-            switch(direction){
-                case 0: head.y = head.y - 20;break;
-                case 1: head.y = head.y + 20;break;
-                case 2: head.x = head.x - 20;break;
-                case 3: head.x = head.x + 20;break;
+        if (timer >= 0.25) {
+            // 1. 移动蛇 1 (你的原始逻辑封装)
+            moveSnake(snakeBody, direction);
+
+            // 2. 如果是双人模式，移动蛇 2
+            if (isTwoPlayer) {
+                moveSnake(snakeBody2, direction2);
             }
 
-            //碰撞检测
-            if (head.x < 0 || head.x >= 500 || head.y < 20 || head.y >= 500) {
+            // --- 碰撞检测区 ---
+            Point head1 = snakeBody.getFirst();
+            Point head2 = snakeBody2.getFirst();
+            // 蛇 1 撞墙或撞自己
+            if (head1.x < 0 || head1.x >= 500 || head1.y < 20 || head1.y >= 500 || checkHitSelf(snakeBody)) {
                 isGameOver = true;
             }
 
-            //碰撞自己身体检测
-            for(int i = snakeBody.size()-1; i > 0; i--){
-                if(head.x == snakeBody.get(i).x && head.y == snakeBody.get(i).y){
+            if (isTwoPlayer) {
+                // 蛇 2 撞墙或撞自己
+                if (head2.x < 0 || head2.x >= 500 || head2.y < 20 || head2.y >= 500 || checkHitSelf(snakeBody2)) {
                     isGameOver = true;
-                    break;
+                }
+                // 互相碰撞检测
+                if (checkHitOther(head1, snakeBody2) || checkHitOther(head2, snakeBody)) {
+                    isGameOver = true;
                 }
             }
 
-            //吃到苹果
-            if(head.x == applePositionX && head.y == applePositionY ){
-                //从数组最后新加一个，相当于新加一个尾巴，复制原来尾巴的位置
+            // --- 吃苹果逻辑 ---
+            if (head1.x == applePositionX && head1.y == applePositionY) {
                 snakeBody.add(new Point(snakeBody.getLast()));
-                snakeLength ++ ;
+                snakeLength1++;
                 randomApple();
             }
+            if (isTwoPlayer) {
+                if (head2.x == applePositionX && head2.y == applePositionY) {
+                    snakeBody2.add(new Point(snakeBody2.getLast()));
+                    randomApple();
+                }
+            }
 
-            //吃到毒苹果
-            if(head.x == poisonX && head.y == poisonY){
-                healthPoints -= 1;
+            // --- 毒苹果逻辑 ---
+            if (head1.x == poisonX && head1.y == poisonY) {
+                healthPoints1 -= 1;
                 randomPoison();
             }
-            //当生命值将为0 游戏结束
-            if(healthPoints <= 0){
-                isGameOver = true;
+            if (head2.x == poisonX && head2.y == poisonY) {
+                healthPoints2 -= 1;
+                randomPoison();
             }
+
+            if (healthPoints1 <= 0)
+                isGameOver = true;
+            if (healthPoints2 <= 0)
+                isGameOver = true;
+
             timer = 0;
         }
     }
 
+    // 辅助方法：移动逻辑
+    void moveSnake(ArrayList<Point> body, int dir) {
+        for (int i = body.size() - 1; i > 0; i--) {
+            body.get(i).x = body.get(i - 1).x;
+            body.get(i).y = body.get(i - 1).y;
+        }
+        Point head = body.getFirst();
+        switch (dir) {
+            case 0: head.y -= 20; break;
+            case 1: head.y += 20; break;
+            case 2: head.x -= 20; break;
+            case 3: head.x += 20; break;
+        }
+    }
 
-    //=====================================苹果=========================================
+    boolean checkHitSelf(ArrayList<Point> body) {
+        Point head = body.getFirst();
+        for (int i = 1; i < body.size(); i++) {
+            if (head.x == body.get(i).x && head.y == body.get(i).y) return true;
+        }
+        return false;
+    }
+
+    boolean checkHitOther(Point head, ArrayList<Point> otherBody) {
+        for (Point p : otherBody) {
+            if (head.x == p.x && head.y == p.y) return true;
+        }
+        return false;
+    }
+
+    // =====================================物品逻辑 =========================================
     int applePositionX, applePositionY;
-
-    //苹果的随机位置
-    public void randomApple(){
+    public void randomApple() {
         boolean isOnItem;
         do {
             applePositionX = rand(25) * 20;
             applePositionY = (rand(23) + 2) * 20;
             isOnItem = false;
-            for(Point p : snakeBody){
-                if(p.x == applePositionX && p.y == applePositionY){
-                    isOnItem = true;
-                    break;
+            for (Point p : snakeBody) {
+                if (p.x == applePositionX && p.y == applePositionY) isOnItem = true;
+            }
+            if (isTwoPlayer) {
+                for (Point p : snakeBody2) {
+                    if (p.x == applePositionX && p.y == applePositionY) isOnItem = true;
                 }
             }
-        }while(isOnItem);
+        } while (isOnItem);
     }
 
-    //画苹果
-    public void drawApple(){
-            drawImage(imgApple, applePositionX, applePositionY,20,20);
-    }
-
-
-    /// 毒苹果///
     int poisonX, poisonY;
-    public void randomPoison(){
+    public void randomPoison() {
         boolean isOnItem;
         do {
             poisonX = rand(25) * 20;
             poisonY = (rand(23) + 2) * 20;
             isOnItem = false;
-            for(Point p : snakeBody){
-                if(p.x == poisonX && p.y == poisonY){
-                    isOnItem = true;
-                    break;
-                }
+            for (Point p : snakeBody) {
+                if (p.x == poisonX && p.y == poisonY) isOnItem = true;
             }
-
-            if(poisonX == applePositionX && poisonY == applePositionY){
-                isOnItem = true;
-            }
-
-        }while(isOnItem);
+            if (poisonX == applePositionX && poisonY == applePositionY) isOnItem = true;
+        } while (isOnItem);
     }
 
-    //画毒苹果
-    public void drawPoison(){
-        drawImage(imgPoison, poisonX, poisonY,25,25);
-    }
-
-
-
+    // ===================================== 绘画部分 =========================================
     public void paintComponent() {
-        //设置背景
         changeColor(black);
         drawSolidRectangle(0, 0, 500, 500);
 
         if (showHelp) {
-            changeColor(white);
-            drawBoldText(100, 150, "HELP", "Helvetica", 36);       // 大号标题
-            drawText(80, 210, "Use UP/DOWN/LEFT/RIGHT to move", "Times", 20);
-            drawText(80, 250, "Eat apples to grow longer", "Times", 20);
-            drawText(80, 290, "Don't hit walls or your body", "Times", 20);
-            drawText(80, 380, "Press SPACE back to MENU", "Times", 22);
+            drawHelpScreen();
             return;
         }
 
         if (gameMenu) {
-            changeColor(white);
-            drawBoldText(140, 200, "MENU", "Helvetica", 40);
-            drawText(120, 250, "1 - Start Game", "Times", 24);
-            drawText(120, 300, "2 - Help", "Times", 24);
-            drawText(120, 350, "3 - Exit Game", "Times", 24);// 菜单大标题
+            drawMenuScreen();
         } else {
             if (!isGameOver) {
-                //画网格
                 drawGrid();
-                //Paint the Snake body
-                drawSnake();
-                //Paint the apple
-                drawApple();
-                //Paint the poison
-                drawPoison();
-                //画得分
-                changeColor(white);
-                drawText(10, 17, "Length of body: " + snakeLength, "Consolas",12);
-                //画生命值
-                changeColor(white);
-                drawText(340, 17, "Health points: ", "Consolas",12);
-                for(int i = 0; i < healthPoints; i++){
-                    drawImage(imgHeart,(420 + i *20),0,23,23);
+                // 画蛇 1
+                for (int i = 0; i < snakeBody.size(); i++) {
+                    drawImage(i == 0 ? imgHead : imgBody, snakeBody.get(i).x, snakeBody.get(i).y, 19, 19);
+                }
+                // 画蛇 2
+                if (isTwoPlayer) {
+                    for (int i = 0; i < snakeBody2.size(); i++) {
+                        // 蛇 2 身体用一样的，头可以用个不一样的颜色
+                        drawImage(i == 0 ? imgHead2 : imgBody, snakeBody2.get(i).x, snakeBody2.get(i).y, 19, 19);
+                    }
+                }
+                drawImage(imgApple, applePositionX, applePositionY, 20, 20);
+                drawImage(imgPoison, poisonX, poisonY, 25, 25);
+
+                // UI 状态栏
+                //两人游戏
+                if(isTwoPlayer) {
+                    changeColor(white);
+                    drawText(10, 17, "P1: " + snakeLength1, "Consolas", 12);
+                    drawText(50, 17, "P2: " + snakeLength2, "Consolas", 12);
+                    drawText(250, 17, "P1 Health: " + healthPoints1, "Consolas", 12);
+                    drawText(350, 17, "P2 Health: " + healthPoints2, "Consolas", 12);
+                    //一人游戏
+                }else {
+                    changeColor(white);
+                    drawText(10, 17, "P1: " + snakeLength1, "Consolas", 12);
+                    drawText(340, 17, "Health points: ", "Consolas",12);
+                    for(int i = 0; i < healthPoints1; i++){
+                        drawImage(imgHeart,(420 + i *20),0,23,23);
+                    }
                 }
             } else {
                 changeColor(255, 80, 80);
                 drawBoldText(140, 250, "GAME OVER");
-
                 changeColor(200, 200, 200);
                 drawText(120, 300, "Press SPACE to return to menu", "Consolas",20);
 
             }
         }
     }
+//drawText(340, 17, "Health points: ", "Consolas",12);
+    void drawMenuScreen() {
+        changeColor(white);
+        drawBoldText(140, 180, "SNAKE GAME", "Helvetica", 40);
+        drawText(120, 250, "1 - Single Player", "Times", 24);
+        drawText(120, 290, "2 - Two Players", "Times", 24);
+        drawText(120, 330, "3 - Help", "Times", 24);
+        drawText(120, 370, "4 - Exit", "Times", 24);
+    }
 
+    void drawHelpScreen() {
+        changeColor(white);
+        drawBoldText(100, 150, "HELP", "Helvetica", 36);
+        drawText(80, 210, "P1: Arrow Keys", "Times", 20);
+        drawText(80, 240, "P2: W A S D", "Times", 20);
+        drawText(80, 280, "Eat apples, avoid poison & walls", "Times", 20);
+        drawText(80, 380, "Press SPACE back to MENU", "Times", 22);
+    }
 
-
-    //构造函数：程序启动就执行这里
-    public void init(){
+    public void init() {
         imgApple = loadImage("out/production/resources/apple.png");
         imgBody = loadImage("out/production/resources/dot.png");
         imgHead = loadImage("out/production/resources/head.png");
         imgPoison = loadImage("out/production/resources/apple_eaten.png");
         imgHeart = loadImage("out/production/resources/heart.png");
-        // 初始化蛇：起始长度为 3 [cite: 8]
-        // 假设每个格子大小是 20 像素
+        imgHead2 = loadImage("out/production/resources/blue_dot.png"); // 也可以换个别的图
+
+        // 初始化蛇 1
         snakeBody.clear();
         snakeBody.add(new Point(100, 100));
-        snakeBody.add(new Point(80,100));
-        snakeBody.add(new Point(60,100));
+        snakeBody.add(new Point(80, 100));
+        snakeBody.add(new Point(60, 100));
+        direction = 3;
 
-        healthPoints = 4;
+        // 初始化蛇 2
+        if (isTwoPlayer) {
+            snakeBody2.clear();
+            snakeBody2.add(new Point(400, 400));
+            snakeBody2.add(new Point(420, 400));
+            snakeBody2.add(new Point(440, 400));
+            direction2 = 2;
+        }
 
+        healthPoints1 = 4;
+        healthPoints2 = 4;
+        snakeLength1 = 3;
+        snakeLength2 = 3;
         randomApple();
         randomPoison();
     }
 
-
-    //键盘设置
-    public void keyPressed(KeyEvent e){
+    public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
-        if (showHelp) {
-            if (key == KeyEvent.VK_SPACE) {
-                showHelp = false;
-            }
+        if (showHelp && key == KeyEvent.VK_SPACE) {
+            showHelp = false;
             return;
         }
-            if(gameMenu){
-            if(key == KeyEvent.VK_1){
-                gameMenu = false;
-                isGameOver = false;
-                init();
-                timer = 0;
-                direction = 3;
+
+        if (gameMenu) {
+            if (key == KeyEvent.VK_1) {
+                isTwoPlayer = false;
+                gameMenu = false; init();
             }
-            if(key == KeyEvent.VK_2){
+            if (key == KeyEvent.VK_2) {
+                isTwoPlayer = true;
+                gameMenu = false; init();
+            }
+            if (key == KeyEvent.VK_3) {
                 showHelp = true;
             }
-            if(key == KeyEvent.VK_3){
-                //退出游戏
+            if (key == KeyEvent.VK_4) {
                 System.exit(0);
             }
             return;
         }
 
-        if(isGameOver && key == KeyEvent.VK_SPACE){
+        if (isGameOver && key == KeyEvent.VK_SPACE) {
             gameMenu = true;
             isGameOver = false;
             return;
         }
 
-        if(!isGameOver){
-        // 0:上 1:下 2:左 3:右
-        //向上走
-        if(key == KeyEvent.VK_UP && direction != 1){
-            direction = 0;
-        }
-        //向下走
-        if(key == KeyEvent.VK_DOWN && direction != 0){
-            direction = 1;
-        }
-        //向左走
-        if(key == KeyEvent.VK_LEFT && direction != 3){
-            direction = 2;
-        }
-        //向右走
-        if(key == KeyEvent.VK_RIGHT && direction != 2) {
-            direction = 3;
-        }
+        if (!isGameOver) {
+            // P1 控制 (Arrow Keys)
+            if (key == KeyEvent.VK_UP && direction != 1)
+                direction = 0;
+            if (key == KeyEvent.VK_DOWN && direction != 0)
+                direction = 1;
+            if (key == KeyEvent.VK_LEFT && direction != 3)
+                direction = 2;
+            if (key == KeyEvent.VK_RIGHT && direction != 2)
+                direction = 3;
+
+            // P2 控制 (WASD)
+            if (isTwoPlayer) {
+                if (key == KeyEvent.VK_W && direction2 != 1)
+                    direction2 = 0;
+                if (key == KeyEvent.VK_S && direction2 != 0)
+                    direction2 = 1;
+                if (key == KeyEvent.VK_A && direction2 != 3)
+                    direction2 = 2;
+                if (key == KeyEvent.VK_D && direction2 != 2)
+                    direction2 = 3;
+            }
         }
     }
-
 }
