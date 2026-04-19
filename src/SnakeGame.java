@@ -1,7 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.awt.Font;
 
 public class SnakeGame extends GameEngine{
     public static void main(String[] args) {
@@ -12,9 +11,19 @@ public class SnakeGame extends GameEngine{
     Image imgHead;
     Image imgBody;
     Image imgApple;
+    Image imgPoison;
+    Image imgHeart;
+
 
     //生命值
-    int healthPoints;
+    int healthPoints = 4;
+
+    //游戏菜单选择 true菜单模式 false游戏模式
+    boolean gameMenu = true;
+    //菜单选择 0: “开始” 1: “帮助” 2: “退出”
+
+    //HELP页面的开关
+    boolean showHelp = false; // 帮助页面开关
 
     //判断游戏结束
     boolean isGameOver = false;
@@ -23,7 +32,7 @@ public class SnakeGame extends GameEngine{
     public void drawGrid(){
         changeColor(64,64,64);
         for(int i = 0 ; i <= 500 ;i = i+20){
-            drawLine(i, 0, i, 500);
+            drawLine(i, 20, i, 500);
         }
         for(int j = 0 ; j <= 500 ;j = j+20){
             drawLine(0, j, 500, j);
@@ -49,9 +58,9 @@ public class SnakeGame extends GameEngine{
         for (int i = 0; i < snakeBody.size(); i++) {
             Point p = snakeBody.get(i);
             if (i == 0) {
-                drawImage(imgHead, p.x , p.y ,20,20);
+                drawImage(imgHead, p.x , p.y ,19,19);
             }else{
-                drawImage(imgBody, p.x , p.y ,20 ,20);
+                drawImage(imgBody, p.x , p.y ,19 ,19);
             }
         }
     }
@@ -77,7 +86,7 @@ public class SnakeGame extends GameEngine{
             }
 
             //碰撞检测
-            if (head.x < 0 || head.x >= 500 || head.y < 0 || head.y >= 500) {
+            if (head.x < 0 || head.x >= 500 || head.y < 20 || head.y >= 500) {
                 isGameOver = true;
             }
 
@@ -97,16 +106,17 @@ public class SnakeGame extends GameEngine{
                 randomApple();
             }
 
+            //吃到毒苹果
+            if(head.x == poisonX && head.y == poisonY){
+                healthPoints -= 1;
+                randomPoison();
+            }
             //当生命值将为0 游戏结束
             if(healthPoints <= 0){
                 isGameOver = true;
             }
-
-
             timer = 0;
-
         }
-
     }
 
 
@@ -115,18 +125,18 @@ public class SnakeGame extends GameEngine{
 
     //苹果的随机位置
     public void randomApple(){
-        boolean isOnSnake;
+        boolean isOnItem;
         do {
             applePositionX = rand(25) * 20;
-            applePositionY = rand(25) * 20;
-            isOnSnake = false;
+            applePositionY = (rand(23) + 2) * 20;
+            isOnItem = false;
             for(Point p : snakeBody){
                 if(p.x == applePositionX && p.y == applePositionY){
-                    isOnSnake = true;
+                    isOnItem = true;
                     break;
                 }
             }
-        }while(isOnSnake);
+        }while(isOnItem);
     }
 
     //画苹果
@@ -135,6 +145,33 @@ public class SnakeGame extends GameEngine{
     }
 
 
+    /// 毒苹果///
+    int poisonX, poisonY;
+    public void randomPoison(){
+        boolean isOnItem;
+        do {
+            poisonX = rand(25) * 20;
+            poisonY = (rand(23) + 2) * 20;
+            isOnItem = false;
+            for(Point p : snakeBody){
+                if(p.x == poisonX && p.y == poisonY){
+                    isOnItem = true;
+                    break;
+                }
+            }
+
+            if(poisonX == applePositionX && poisonY == applePositionY){
+                isOnItem = true;
+            }
+
+        }while(isOnItem);
+    }
+
+    //画毒苹果
+    public void drawPoison(){
+        drawImage(imgPoison, poisonX, poisonY,25,25);
+    }
+
 
 
     public void paintComponent() {
@@ -142,19 +179,49 @@ public class SnakeGame extends GameEngine{
         changeColor(black);
         drawSolidRectangle(0, 0, 500, 500);
 
-        if(!isGameOver){
-            //Paint the Snake body
-            drawSnake();
-            //Paint the apple
-            drawApple();
-            //画网格
-            drawGrid();
-        }else{
-            changeColor(255, 80, 80);
-            drawText(140, 250, "GAME OVER");
+        if (showHelp) {
+            changeColor(white);
+            drawBoldText(100, 150, "HELP", "Helvetica", 36);       // 大号标题
+            drawText(80, 210, "Use UP/DOWN/LEFT/RIGHT to move", "Times", 20);
+            drawText(80, 250, "Eat apples to grow longer", "Times", 20);
+            drawText(80, 290, "Don't hit walls or your body", "Times", 20);
+            drawText(80, 380, "Press SPACE back to MENU", "Times", 22);
+            return;
+        }
 
-            changeColor(200, 200, 200);
-            drawText(100, 300, "Press SPACE to replay");
+        if (gameMenu) {
+            changeColor(white);
+            drawBoldText(140, 200, "MENU", "Helvetica", 40);
+            drawText(120, 250, "1 - Start Game", "Times", 24);
+            drawText(120, 300, "2 - Help", "Times", 24);
+            drawText(120, 350, "3 - Exit Game", "Times", 24);// 菜单大标题
+        } else {
+            if (!isGameOver) {
+                //画网格
+                drawGrid();
+                //Paint the Snake body
+                drawSnake();
+                //Paint the apple
+                drawApple();
+                //Paint the poison
+                drawPoison();
+                //画得分
+                changeColor(white);
+                drawText(10, 17, "Length of body: " + snakeLength, "Consolas",12);
+                //画生命值
+                changeColor(white);
+                drawText(340, 17, "Health points: ", "Consolas",12);
+                for(int i = 0; i < healthPoints; i++){
+                    drawImage(imgHeart,(420 + i *20),0,23,23);
+                }
+            } else {
+                changeColor(255, 80, 80);
+                drawBoldText(140, 250, "GAME OVER");
+
+                changeColor(200, 200, 200);
+                drawText(120, 300, "Press SPACE to return to menu", "Consolas",20);
+
+            }
         }
     }
 
@@ -165,6 +232,8 @@ public class SnakeGame extends GameEngine{
         imgApple = loadImage("out/production/resources/apple.png");
         imgBody = loadImage("out/production/resources/dot.png");
         imgHead = loadImage("out/production/resources/head.png");
+        imgPoison = loadImage("out/production/resources/apple_eaten.png");
+        imgHeart = loadImage("out/production/resources/heart.png");
         // 初始化蛇：起始长度为 3 [cite: 8]
         // 假设每个格子大小是 20 像素
         snakeBody.clear();
@@ -175,6 +244,7 @@ public class SnakeGame extends GameEngine{
         healthPoints = 4;
 
         randomApple();
+        randomPoison();
     }
 
 
@@ -182,12 +252,34 @@ public class SnakeGame extends GameEngine{
     public void keyPressed(KeyEvent e){
         int key = e.getKeyCode();
 
-        if(isGameOver && key == KeyEvent.VK_SPACE){
-            init();
-            isGameOver = false;
-            direction = 3;
-            timer = 0.0;
+        if (showHelp) {
+            if (key == KeyEvent.VK_SPACE) {
+                showHelp = false;
+            }
+            return;
+        }
+            if(gameMenu){
+            if(key == KeyEvent.VK_1){
+                gameMenu = false;
+                isGameOver = false;
+                init();
+                timer = 0;
+                direction = 3;
+            }
+            if(key == KeyEvent.VK_2){
+                showHelp = true;
+            }
+            if(key == KeyEvent.VK_3){
+                //退出游戏
+                System.exit(0);
+            }
+            return;
+        }
 
+        if(isGameOver && key == KeyEvent.VK_SPACE){
+            gameMenu = true;
+            isGameOver = false;
+            return;
         }
 
         if(!isGameOver){
