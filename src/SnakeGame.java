@@ -64,13 +64,14 @@ public class SnakeGame extends GameEngine {
 
             // Collision detection
             Point head1 = snakeBody.getFirst();
-            Point head2 = snakeBody2.getFirst();
+
             // The snake 1 bumps into the wall or hits itself.
             if (head1.x < 0 || head1.x >= 500 || head1.y < 20 || head1.y >= 500 || checkHitSelf(snakeBody)) {
                 isGameOver = true;
             }
 
             if (isTwoPlayer) {
+                Point head2 = snakeBody2.getFirst();
                 //The snake 2 bumps into the wall or hits itself.
                 if (head2.x < 0 || head2.x >= 500 || head2.y < 20 || head2.y >= 500 || checkHitSelf(snakeBody2)) {
                     isGameOver = true;
@@ -89,31 +90,40 @@ public class SnakeGame extends GameEngine {
                 snakeLength1++;
                 randomApple();
             }
+            
+            if (head1.x == poisonX && head1.y == poisonY) {
+                healthPoints1 -= 1;
+                randomPoison();
+            }
+
             if (isTwoPlayer) {
+                Point head2 = snakeBody2.getFirst();
                 if (head2.x == applePositionX && head2.y == applePositionY) {
-                    if(snakeLength1 < 20) {
+                    if (snakeLength1 < 20) {
                         snakeBody2.add(new Point(snakeBody2.getLast()));
                     }
                     snakeLength2++;
                     randomApple();
                 }
+
+
+                // logic for eating poison
+                if (head1.x == poisonX && head1.y == poisonY) {
+                    healthPoints1 -= 1;
+                    randomPoison();
+                }
+                if (head2.x == poisonX && head2.y == poisonY) {
+                    healthPoints2 -= 1;
+                    randomPoison();
+                }
             }
 
-            // logic for eating poison
-            if (head1.x == poisonX && head1.y == poisonY) {
-                healthPoints1 -= 1;
-                randomPoison();
-            }
-            if (head2.x == poisonX && head2.y == poisonY) {
-                healthPoints2 -= 1;
-                randomPoison();
-            }
+                if (healthPoints1 <= 0)
+                    isGameOver = true;
+                if (healthPoints2 <= 0)
+                    isGameOver = true;
 
-            if (healthPoints1 <= 0)
-                isGameOver = true;
-            if (healthPoints2 <= 0)
-                isGameOver = true;
-
+            
             timer = 0;
         }
     }
@@ -246,12 +256,53 @@ public class SnakeGame extends GameEngine {
     }
 
     void drawHelpScreen() {
+        // 1. 背景：深灰色渐变感
+        changeColor(30, 30, 30);
+        drawSolidRectangle(0, 0, 500, 500);
+
+        // 2. 标题
+        changeColor(255, 215, 0); // 金色
+        drawBoldText(160, 60, "HOW TO PLAY", "Helvetica", 32);
+        drawLine(150, 75, 350, 75);
+
+        // 3. 玩家操作区 (Player Controls)
+        // P1
+        changeColor(50, 255, 50); // 亮绿色
+        drawBoldText(60, 120, "Player 1 (Single/PVP):", "Arial", 18);
         changeColor(white);
-        drawBoldText(100, 150, "HELP", "Helvetica", 36);
-        drawText(80, 210, "P1: Arrow Keys", "Times", 20);
-        drawText(80, 240, "P2: W A S D", "Times", 20);
-        drawText(80, 280, "Eat apples, avoid poison & walls", "Times", 20);
-        drawText(80, 380, "Press SPACE back to MENU", "Times", 22);
+        drawText(80, 150, "Movement:  [ Arrow Keys ]", "Consolas", 16);
+
+        // P2
+        changeColor(50, 200, 255); // 亮蓝色
+        drawBoldText(60, 190, "Player 2 (PVP Mode Only):", "Arial", 18);
+        changeColor(white);
+        drawText(80, 220, "Movement:  [ W, A, S, D ]", "Consolas", 16);
+
+        // 4. 游戏规则 (Game Rules)
+        changeColor(255, 255, 100); // 浅黄色
+        drawBoldText(60, 270, "Rules:", "Arial", 18);
+        changeColor(220, 220, 220);
+        drawText(80, 300, "* Eat Apples to grow and score points.", "Arial", 14);
+        drawText(80, 325, "* Avoid hitting walls or your own body.", "Arial", 14);
+        drawText(80, 350, "* In PVP: Don't collide with the other snake.", "Arial", 14);
+        drawText(80, 375, "* Max snake length is 20 segments.", "Arial", 14);
+
+        // 5. 物品说明 (Item Legends)
+        changeColor(255, 100, 100); // 亮红色
+        drawBoldText(60, 420, "Items:", "Arial", 18);
+
+        // 小图标演示 (提示玩家哪个是好哪个是坏)
+        drawImage(imgApple, 140, 405, 20, 20);
+        changeColor(white);
+        drawText(170, 420, "Apple (+Length)", "Arial", 14);
+
+        drawImage(imgPoison, 290, 405, 23, 23);
+        changeColor(white);
+        drawText(320, 420, "Poison (-1 Health)", "Arial", 14);
+
+        // 6. 返回提示
+        changeColor(200, 200, 200);
+        drawBoldText(110, 480, "Press [ SPACE ] to return to Menu", "Helvetica", 18);
     }
 
     public void init() {
