@@ -256,29 +256,25 @@ public class SnakeGame extends GameEngine {
     }
 
     void drawHelpScreen() {
-        // 1. 背景：深灰色渐变感
         changeColor(30, 30, 30);
         drawSolidRectangle(0, 0, 500, 500);
 
-        // 2. 标题
         changeColor(255, 215, 0); // 金色
         drawBoldText(160, 60, "HOW TO PLAY", "Helvetica", 32);
         drawLine(150, 75, 350, 75);
 
-        // 3. 玩家操作区 (Player Controls)
-        // P1
+
         changeColor(50, 255, 50); // 亮绿色
         drawBoldText(60, 120, "Player 1 (Single/PVP):", "Arial", 18);
         changeColor(white);
         drawText(80, 150, "Movement:  [ Arrow Keys ]", "Consolas", 16);
 
-        // P2
+
         changeColor(50, 200, 255); // 亮蓝色
         drawBoldText(60, 190, "Player 2 (PVP Mode Only):", "Arial", 18);
         changeColor(white);
         drawText(80, 220, "Movement:  [ W, A, S, D ]", "Consolas", 16);
 
-        // 4. 游戏规则 (Game Rules)
         changeColor(255, 255, 100); // 浅黄色
         drawBoldText(60, 270, "Rules:", "Arial", 18);
         changeColor(220, 220, 220);
@@ -287,11 +283,9 @@ public class SnakeGame extends GameEngine {
         drawText(80, 350, "* In PVP: Don't collide with the other snake.", "Arial", 14);
         drawText(80, 375, "* Max snake length is 20 segments.", "Arial", 14);
 
-        // 5. 物品说明 (Item Legends)
         changeColor(255, 100, 100); // 亮红色
         drawBoldText(60, 420, "Items:", "Arial", 18);
 
-        // 小图标演示 (提示玩家哪个是好哪个是坏)
         drawImage(imgApple, 140, 405, 20, 20);
         changeColor(white);
         drawText(170, 420, "Apple (+Length)", "Arial", 14);
@@ -300,7 +294,6 @@ public class SnakeGame extends GameEngine {
         changeColor(white);
         drawText(320, 420, "Poison (-1 Health)", "Arial", 14);
 
-        // 6. 返回提示
         changeColor(200, 200, 200);
         drawBoldText(110, 480, "Press [ SPACE ] to return to Menu", "Helvetica", 18);
     }
